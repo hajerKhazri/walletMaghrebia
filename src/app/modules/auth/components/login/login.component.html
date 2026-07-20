@@ -1,0 +1,96 @@
+<div class="login-container">
+  <div class="login-wrapper">
+    <!-- Logo -->
+    <div class="login-brand">
+      <svg width="48" height="48" viewBox="0 0 36 36" fill="none">
+        <rect width="36" height="36" rx="10" fill="url(#brandGradient)"/>
+        <path d="M10 14L18 10L26 14L18 18L10 14Z" fill="white" opacity="0.2"/>
+        <path d="M10 18L18 22L26 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M18 22V28" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="brandGradient" x1="0" y1="0" x2="36" y2="36">
+            <stop offset="0%" stop-color="#4F46E5"/>
+            <stop offset="100%" stop-color="#0EA5E9"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div>
+        <h1>Wallet Maghrebia</h1>
+        <p>Plateforme d'alimentation de wallets</p>
+      </div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card glass-card">
+      <div class="login-header">
+        <h2>Bienvenue</h2>
+        <p>Connectez-vous à votre compte</p>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="username">Nom d'utilisateur</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user"></i>
+            <input
+              id="username"
+              type="text"
+              class="form-control"
+              formControlName="username"
+              placeholder="Entrez votre nom d'utilisateur"
+              [class.is-invalid]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched"
+            >
+          </div>
+          <div class="invalid-feedback" *ngIf="loginForm.get('username')?.invalid && loginForm.get('username')?.touched">
+            Le nom d'utilisateur est obligatoire
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input
+              id="password"
+              type="password"
+              class="form-control"
+              formControlName="password"
+              placeholder="Entrez votre mot de passe"
+              [class.is-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched"
+            >
+          </div>
+          <div class="invalid-feedback" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+            Le mot de passe doit contenir au moins 6 caractères
+          </div>
+        </div>
+
+        <!-- ✅ LIENS AJOUTÉS -->
+        <div class="login-options">
+          <a routerLink="/auth/forgot-password" class="forgot-link">
+            Mot de passe oublié ?
+          </a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg btn-glow" [disabled]="loginForm.invalid || loading" style="width:100%;">
+          <span *ngIf="!loading">Se connecter</span>
+          <span *ngIf="loading">
+            <span class="spinner spinner-sm"></span>
+            Connexion...
+          </span>
+        </button>
+      </form>
+
+      <!-- ✅ LIEN VERS L'INSCRIPTION -->
+      <div class="register-link">
+        <p>Pas encore de compte ? <a routerLink="/auth/register">Créer un compte</a></p>
+      </div>
+
+      
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer-text">
+      <p>&copy; 2026 Wallet Maghrebia - Tous droits réservés</p>
+    </div>
+  </div>
+</div>

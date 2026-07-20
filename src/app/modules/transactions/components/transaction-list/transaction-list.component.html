@@ -1,0 +1,232 @@
+<div class="page-container">
+  <!-- En-tête -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="icon-wrapper">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Liste des transactions</h1>
+        <p>Consultez et gérez toutes les transactions</p>
+      </div>
+    </div>
+    <a routerLink="/transactions/create" class="btn-primary">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Nouvelle transaction
+    </a>
+  </header>
+
+  <!-- Carte principale -->
+  <div class="main-card">
+    <!-- Filtres -->
+    <div class="filters-section">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Statut</label>
+          <select [(ngModel)]="filters.status" class="form-control">
+            <option [ngValue]="undefined">Tous</option>
+            <option *ngFor="let status of statusOptions" [value]="status">
+              {{ getStatusLabel(status) }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Téléphone</label>
+          <input
+            type="text"
+            [(ngModel)]="filters.mobileNumber"
+            class="form-control"
+            placeholder="Rechercher..."
+          />
+        </div>
+
+        <div class="filter-group">
+          <label>Date début</label>
+          <input
+            type="datetime-local"
+            [(ngModel)]="filters.fromDate"
+            class="form-control"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label>Date fin</label>
+          <input
+            type="datetime-local"
+            [(ngModel)]="filters.toDate"
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <div class="filters-actions">
+        <button class="btn btn-filter" (click)="applyFilters()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 13 10 21 14 18 14 13 22 3"/>
+          </svg>
+          Filtrer
+        </button>
+        <button class="btn btn-reset" (click)="resetFilters()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9m0 0v6m0-6h-6"/>
+          </svg>
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+
+    <!-- Chargement -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Chargement des transactions...</p>
+    </div>
+
+    <!-- Tableau -->
+    <div class="table-wrapper" *ngIf="!loading && transactions.length > 0">
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Bénéficiaire</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Initiateur</th>
+            <th>Validateur</th>
+            <th>Date</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of transactions">
+            <td>
+              <a [routerLink]="['/transactions', transaction.id]" class="ref-link">
+                {{ transaction.refId }}
+              </a>
+            </td>
+            <td>{{ transaction.mobileNumber }}</td>
+            <td class="amount">{{ formatAmount(transaction.amount) }}</td>
+            <td>
+              <span class="badge" [class]="getStatusClass(transaction.status)">
+                {{ getStatusLabel(transaction.status) }}
+              </span>
+            </td>
+            <td>{{ transaction.initiatorUsername }}</td>
+            <td>{{ transaction.validatorUsername || '-' }}</td>
+            <td>{{ formatDate(transaction.initiatedAt) }}</td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  *ngIf="transaction.status === 'CREATED' && canEdit(transaction)"
+                  class="btn-icon edit"
+                  (click)="editRemarks(transaction)"
+                  title="Modifier le motif"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <!-- ✅ Bouton Annuler avec modal de confirmation -->
+                <button
+                  *ngIf="transaction.status === 'CREATED' || transaction.status === 'AWAITING_VALIDATION'"
+                  class="btn-icon cancel"
+                  (click)="openCancelConfirm(transaction)"
+                  title="Annuler"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                  </svg>
+                </button>
+                <a [routerLink]="['/transactions', transaction.id]" class="btn-icon view" title="Voir">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Aucune donnée -->
+    <div class="empty-state" *ngIf="!loading && transactions.length === 0">
+      <div class="empty-icon">📭</div>
+      <h3>Aucune transaction trouvée</h3>
+      <p>Aucune transaction ne correspond à vos critères de recherche.</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-section" *ngIf="pageInfo && pageInfo.totalPages > 1">
+      <span class="pagination-info">
+        {{ pageInfo.number * pageInfo.size + 1 }} -
+        {{ (pageInfo.number + 1) * pageInfo.size > pageInfo.totalElements ? pageInfo.totalElements : (pageInfo.number + 1) * pageInfo.size }}
+        sur {{ pageInfo.totalElements }}
+      </span>
+      <div class="pagination-buttons">
+        <button
+          class="btn-page"
+          [disabled]="pageInfo.first"
+          (click)="changePage(pageInfo.number - 1)"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <button
+          *ngFor="let page of pageNumbers"
+          class="btn-page"
+          [class.active]="page === pageInfo.number"
+          (click)="changePage(page)"
+        >
+          {{ page + 1 }}
+        </button>
+        <button
+          class="btn-page"
+          [disabled]="pageInfo.last"
+          (click)="changePage(pageInfo.number + 1)"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- MODAL DE CONFIRMATION                        -->
+<!-- ============================================ -->
+<div *ngIf="showConfirmModal" class="modal-overlay">
+  <div class="modal-content confirm-modal">
+    <div class="modal-header">
+      <h3>⚠️ Confirmation</h3>
+      <button class="modal-close" (click)="closeConfirmModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-icon">❓</div>
+      <p class="confirm-message">{{ confirmMessage }}</p>
+      <p class="confirm-hint" *ngIf="confirmHint">{{ confirmHint }}</p>
+    </div>
+    <div class="modal-footer confirm-footer">
+      <button class="btn btn-secondary" (click)="closeConfirmModal()">Annuler</button>
+      <button class="btn btn-danger" (click)="confirmAction()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+        {{ confirmButtonText || 'Confirmer' }}
+      </button>
+    </div>
+  </div>
+</div>

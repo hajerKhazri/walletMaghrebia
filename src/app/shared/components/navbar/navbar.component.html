@@ -1,0 +1,112 @@
+<nav class="navbar" *ngIf="isAuthenticated">
+  <div class="navbar-container">
+    <!-- Logo -->
+    <div class="navbar-brand">
+      <a routerLink="/dashboard">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="10" fill="url(#brandGradient)"/>
+          <path d="M10 14L18 10L26 14L18 18L10 14Z" fill="white" opacity="0.2"/>
+          <path d="M10 18L18 22L26 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M18 22V28" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="brandGradient" x1="0" y1="0" x2="36" y2="36">
+              <stop offset="0%" stop-color="#6C63FF"/>
+              <stop offset="100%" stop-color="#00D2FF"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="brand-text">Wallet</span>
+        <span class="brand-sub">Maghrebia</span>
+      </a>
+    </div>
+
+    <!-- Menu Toggle (Mobile) -->
+    <button class="navbar-toggle" (click)="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation Links -->
+    <div class="navbar-menu" [class.active]="isMenuOpen">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+            <i class="fas fa-chart-pie"></i>
+            <span>Tableau de bord</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="hasRole('INITIATEUR') || hasRole('ADMIN')">
+          <a routerLink="/transactions/create" routerLinkActive="active" class="nav-link">
+            <i class="fas fa-plus-circle"></i>
+            <span>Nouvelle transaction</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a routerLink="/transactions" routerLinkActive="active" class="nav-link">
+            <i class="fas fa-list-ul"></i>
+            <span>Transactions</span>
+          </a>
+        </li>
+
+        <!-- ✅ AJOUT : Batches visible pour INITIATEUR, ADMIN et VALIDATEUR -->
+        <li class="nav-item" *ngIf="hasRole('INITIATEUR') || hasRole('ADMIN') || hasRole('VALIDATEUR')">
+          <a routerLink="/batches" routerLinkActive="active" class="nav-link">
+            <i class="fas fa-layer-group"></i>
+            <span>Batches</span>
+          </a>
+        </li>
+
+        <li class="nav-item" *ngIf="hasRole('ADMIN')">
+          <a routerLink="/users" routerLinkActive="active" class="nav-link">
+            <i class="fas fa-users"></i>
+            <span>Utilisateurs</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- User Profile -->
+      <div class="navbar-user">
+        <button class="user-profile-btn" (click)="toggleDropdown()">
+          <div class="user-avatar">
+            {{ getInitials() }}
+          </div>
+          <div class="user-info">
+            <span class="user-name">{{ user?.firstName || user?.username }}</span>
+            <span class="user-role">{{ getRoleLabel(user?.role || '') }}</span>
+          </div>
+          <i class="fas fa-chevron-down" [class.rotated]="isDropdownOpen"></i>
+        </button>
+
+        <!-- Dropdown -->
+        <div class="dropdown-menu" [class.active]="isDropdownOpen">
+          <div class="dropdown-header">
+            <div class="dropdown-avatar">
+              {{ getInitials() }}
+            </div>
+            <div class="dropdown-info">
+              <span class="dropdown-name">{{ user?.firstName || user?.username }}</span>
+              <span class="dropdown-role">{{ getRoleLabel(user?.role || '') }}</span>
+            </div>
+          </div>
+          <div class="dropdown-divider"></div>
+          <a routerLink="/profile" class="dropdown-item">
+            <i class="fas fa-user"></i>
+            <span>Mon profil</span>
+          </a>
+          <a routerLink="/settings" class="dropdown-item">
+            <i class="fas fa-cog"></i>
+            <span>Paramètres</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item logout" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Déconnexion</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

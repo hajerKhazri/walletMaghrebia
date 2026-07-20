@@ -1,0 +1,272 @@
+<div class="page-container">
+  <!-- En-tête -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="icon-wrapper">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Nouvelle transaction</h1>
+        <p>Alimentez un wallet en quelques clics</p>
+      </div>
+    </div>
+    <a routerLink="/transactions" class="btn-back">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Retour
+    </a>
+  </header>
+
+  <!-- Carte principale -->
+  <div class="main-card">
+    <form [formGroup]="transactionForm" (ngSubmit)="onSubmit()">
+
+      <!-- ========================================== -->
+      <!-- ÉTAPE 1 : VÉRIFICATION DU WALLET            -->
+      <!-- ========================================== -->
+      <div class="step">
+        <div class="step-header">
+          <div class="step-number">
+            <span>1</span>
+          </div>
+          <div class="step-info">
+            <h3>Vérification du wallet</h3>
+            <p>Identifiez le bénéficiaire</p>
+          </div>
+          <div class="step-status" [class.verified]="walletVerified">
+            <span *ngIf="!walletVerified">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              En attente
+            </span>
+            <span *ngIf="walletVerified">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Vérifié
+            </span>
+          </div>
+        </div>
+
+        <div class="step-body">
+          <div class="form-row">
+            <!-- Téléphone -->
+            <div class="form-group">
+              <label for="mobileNumber">Numéro de téléphone <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <input
+                  id="mobileNumber"
+                  type="text"
+                  class="form-control"
+                  formControlName="mobileNumber"
+                  placeholder="Ex: 89089000"
+                  [class.is-invalid]="transactionForm.get('mobileNumber')?.invalid && transactionForm.get('mobileNumber')?.touched"
+                />
+              </div>
+              <div class="invalid-feedback" *ngIf="transactionForm.get('mobileNumber')?.invalid && transactionForm.get('mobileNumber')?.touched">
+                Le numéro doit contenir 8 chiffres
+              </div>
+            </div>
+
+            <!-- Type de compte -->
+            <div class="form-group">
+              <label for="userType">Type de compte <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="12" r="4"/>
+                </svg>
+                <select id="userType" class="form-control" formControlName="userType">
+                  <option value="SUBSCRIBER">📱 Agent</option>
+                  <option value="CUSTOMER">👤 Client</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bouton Vérifier -->
+          <button
+            type="button"
+            class="btn btn-verify"
+            (click)="verifyWallet()"
+            [disabled]="verifying || transactionForm.get('mobileNumber')?.invalid"
+          >
+            <span *ngIf="!verifying">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              Vérifier le wallet
+            </span>
+            <span *ngIf="verifying" class="spinner-text">
+              <span class="spinner-small"></span>
+              Vérification...
+            </span>
+          </button>
+
+          <!-- Carte Wallet -->
+          <div class="wallet-result" *ngIf="walletInfo">
+            <div class="wallet-card" [class.verified]="walletVerified" [class.error]="!walletVerified">
+              <div class="wallet-card-header">
+                <div class="wallet-status-icon">
+                  <span *ngIf="walletVerified">✅</span>
+                  <span *ngIf="!walletVerified">❌</span>
+                </div>
+                <span class="wallet-status-text">
+                  {{ walletVerified ? 'Wallet vérifié' : 'Wallet non trouvé' }}
+                </span>
+              </div>
+              <div class="wallet-card-body" *ngIf="walletVerified">
+                <div class="info-item">
+                  <span class="info-label">Nom</span>
+                  <span class="info-value">{{ walletInfo.firstName }} {{ walletInfo.lastName }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Téléphone</span>
+                  <span class="info-value">{{ walletInfo.mobileNumber }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">KYC</span>
+                  <span class="info-value">{{ walletInfo.kycIdType }} - {{ walletInfo.kycIdValue }}</span>
+                </div>
+              </div>
+              <div class="wallet-card-body" *ngIf="!walletVerified">
+                <p class="error-message">Aucun wallet trouvé pour ce numéro.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- ÉTAPE 2 : DÉTAILS DE LA TRANSACTION        -->
+      <!-- ========================================== -->
+      <div class="step" *ngIf="walletVerified">
+        <div class="step-header">
+          <div class="step-number">
+            <span>2</span>
+          </div>
+          <div class="step-info">
+            <h3>Détails de la transaction</h3>
+            <p>Renseignez le montant et le motif</p>
+          </div>
+        </div>
+
+        <div class="step-body">
+          <div class="form-row">
+            <!-- Montant -->
+            <div class="form-group">
+              <label for="amount">Montant (TND) <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <span class="currency-symbol">DT</span>
+                <input
+                  id="amount"
+                  type="number"
+                  class="form-control"
+                  formControlName="amount"
+                  placeholder="0.00"
+                  step="0.01"
+                  [class.is-invalid]="transactionForm.get('amount')?.invalid && transactionForm.get('amount')?.touched"
+                />
+              </div>
+              <div class="invalid-feedback" *ngIf="transactionForm.get('amount')?.invalid && transactionForm.get('amount')?.touched">
+                Le montant doit être supérieur à 0
+              </div>
+            </div>
+
+            <!-- Motif -->
+            <div class="form-group">
+              <label for="motif">Motif <span class="required">*</span></label>
+              <div class="input-with-icon">
+                <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <select id="motif" class="form-control" formControlName="motif">
+                  <option value="">-- Sélectionnez un motif --</option>
+                  <option *ngFor="let m of motifs" [value]="m">{{ m }}</option>
+                  <option value="autre">✏️ Autre</option>
+                </select>
+              </div>
+              <div class="invalid-feedback" *ngIf="transactionForm.get('motif')?.invalid && transactionForm.get('motif')?.touched">
+                Veuillez sélectionner un motif
+              </div>
+            </div>
+          </div>
+
+          <!-- Champ "Autre" -->
+          <div class="form-group" *ngIf="transactionForm.get('motif')?.value === 'autre'">
+            <label for="autreMotif">Précisez le motif</label>
+            <input
+              id="autreMotif"
+              type="text"
+              class="form-control"
+              formControlName="autreMotif"
+              placeholder="Saisissez votre motif..."
+            />
+          </div>
+
+          <!-- Résumé de la transaction -->
+          <div class="transaction-summary" *ngIf="walletVerified">
+            <div class="summary-title">📋 Récapitulatif</div>
+            <div class="summary-grid">
+              <div class="summary-item">
+                <span class="summary-label">Bénéficiaire</span>
+                <span class="summary-value">{{ walletInfo?.firstName }} {{ walletInfo?.lastName }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Téléphone</span>
+                <span class="summary-value">{{ walletInfo?.mobileNumber }}</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Montant</span>
+                <span class="summary-value highlight">{{ transactionForm.get('amount')?.value || 0 }} TND</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Motif</span>
+                <span class="summary-value">{{ getMotifLabel() }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="form-actions">
+            <button
+              type="submit"
+              class="btn btn-submit"
+              [disabled]="loading || transactionForm.invalid"
+            >
+              <span *ngIf="!loading">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Créer la transaction
+              </span>
+              <span *ngIf="loading" class="spinner-text">
+                <span class="spinner-small"></span>
+                Création en cours...
+              </span>
+            </button>
+            <button
+              type="button"
+              class="btn btn-cancel"
+              (click)="router.navigate(['/transactions'])"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

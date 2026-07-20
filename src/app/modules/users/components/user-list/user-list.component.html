@@ -1,0 +1,78 @@
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">👥 Gestion des utilisateurs</h3>
+      <a routerLink="/users/create" class="btn btn-primary">
+        ➕ Nouvel utilisateur
+      </a>
+    </div>
+
+    <div class="loading-spinner" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="table-container" *ngIf="!loading && users.length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nom d'utilisateur</th>
+            <th>Email</th>
+            <th>Nom complet</th>
+            <th>Rôle</th>
+            <th>Statut</th>
+            <th>Date création</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users">
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.firstName }} {{ user.lastName }}</td>
+            <td>
+              <span class="badge" [class]="getRoleClass(user.role)">
+                {{ getRoleLabel(user.role) }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [class.badge-success]="user.active" [class.badge-danger]="!user.active">
+                {{ user.active ? 'Actif' : 'Inactif' }}
+              </span>
+            </td>
+            <td>{{ formatDate(user.createdAt) }}</td>
+            <td>
+              <div class="actions">
+                <!-- Bouton Modifier -->
+                <button class="btn btn-primary btn-sm" (click)="editUser(user)">
+                  ✏️
+                </button>
+                <!-- Sélecteur de rôle -->
+                <select class="form-control form-control-sm" 
+                        (change)="changeRole($event, user)" 
+                        [value]="user.role"
+                        style="width: auto; display: inline-block;">
+                  <option *ngFor="let role of getRoleOptions()" [value]="role">
+                    {{ getRoleLabel(role) }}
+                  </option>
+                </select>
+                <!-- Bouton Désactiver/Activer -->
+                <button class="btn btn-sm" 
+                        [class.btn-warning]="user.active"
+                        [class.btn-success]="!user.active"
+                        (click)="toggleUserStatus(user)">
+                  {{ user.active ? '❌ Désactiver' : '✅ Activer' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!loading && users.length === 0" class="text-center text-muted" style="padding: 40px;">
+      <p>Aucun utilisateur trouvé</p>
+    </div>
+  </div>
+</div>

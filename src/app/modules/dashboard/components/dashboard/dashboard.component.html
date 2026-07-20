@@ -1,0 +1,104 @@
+<div class="container">
+  <!-- En-tête -->
+  <div class="dashboard-header">
+    <h1>📊 Tableau de bord</h1>
+    <p>Bienvenue, <strong>{{ user?.firstName || user?.username }}</strong> ({{ getRoleLabel(user?.role || '') }})</p>
+  </div>
+
+  <!-- 💰 Carte Solde (visible pour Initiateur et Admin) -->
+  <div class="balance-card" *ngIf="showBalance">
+    <div class="balance-content">
+      <div class="balance-icon">💰</div>
+      <div class="balance-info">
+        <div class="balance-label">Votre solde</div>
+        <div class="balance-value">{{ formatAmount(balance) }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="stats-grid" *ngIf="!loading">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.totalTransactions }}</div>
+        <div class="stat-label">Total transactions</div>
+      </div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.pendingTransactions }}</div>
+        <div class="stat-label">En attente</div>
+      </div>
+    </div>
+    <div class="stat-card stat-success">
+      <div class="stat-icon">✅</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.successfulTransactions }}</div>
+        <div class="stat-label">Réussies</div>
+      </div>
+    </div>
+    <div class="stat-card stat-failed">
+      <div class="stat-icon">❌</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stats.failedTransactions }}</div>
+        <div class="stat-label">Échouées</div>
+      </div>
+    </div>
+    <div class="stat-card stat-total">
+      <div class="stat-icon">💰</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ formatAmount(stats.totalAmount) }}</div>
+        <div class="stat-label">Montant total</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Transactions récentes -->
+  <div class="card mt-3">
+    <div class="card-header">
+      <h3 class="card-title">📋 Transactions récentes</h3>
+      <a routerLink="/transactions" class="btn btn-primary btn-sm">Voir tout</a>
+    </div>
+
+    <div class="table-container" *ngIf="recentTransactions.length > 0">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Bénéficiaire</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of recentTransactions">
+            <td>
+              <a [routerLink]="['/transactions', transaction.id]" class="text-primary">
+                {{ transaction.refId }}
+              </a>
+            </td>
+            <td>{{ transaction.mobileNumber }}</td>
+            <td>{{ formatAmount(transaction.amount) }}</td>
+            <td>
+              <span class="badge" [class]="getStatusClass(transaction.status)">
+                {{ getStatusLabel(transaction.status) }}
+              </span>
+            </td>
+            <td>{{ formatDate(transaction.initiatedAt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="recentTransactions.length === 0" class="text-center text-muted">
+      <p>Aucune transaction récente</p>
+    </div>
+  </div>
+</div>
