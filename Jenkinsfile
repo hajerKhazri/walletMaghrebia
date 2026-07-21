@@ -14,7 +14,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     credentialsId: 'github-credentials',
-                    url: 'https://github.com/hajerKhazri/wallet-maghrebia.git'
+                    url: 'https://github.com/hajerKhazri/walletMaghrebia.git'
             }
         }
 
