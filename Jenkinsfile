@@ -2,6 +2,7 @@ pipeline {
     agent none
 
     stages {
+        // 1️⃣ Checkout du code depuis GitHub
         stage('Checkout') {
             agent any
             steps {
@@ -11,24 +12,28 @@ pipeline {
             }
         }
 
+        // 2️⃣ Build du backend (Spring Boot / Maven)
         stage('Build Backend') {
             agent {
                 docker {
                     image 'maven:3.9.4-eclipse-temurin-21'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock -u 0:0'   // ✅ exécution en root
                 }
             }
             steps {
                 dir('backend') {
-sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
+                    // Utilisation d'un cache local dans /tmp pour éviter les problèmes de droits
+                    sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
                 }
             }
         }
 
+        // 3️⃣ Build du frontend (Angular / Node.js)
         stage('Build Frontend') {
             agent {
                 docker {
                     image 'node:20-alpine'
+                    args '-u 0:0'   // ✅ root pour éviter les permissions
                 }
             }
             steps {
@@ -39,10 +44,12 @@ sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
             }
         }
 
+        // 4️⃣ Build du service IA (Python)
         stage('Build AI Service') {
             agent {
                 docker {
                     image 'python:3.11-slim'
+                    args '-u 0:0'   // ✅ root pour écrire dans /app
                 }
             }
             steps {
@@ -52,6 +59,7 @@ sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
             }
         }
 
+        // 5️⃣ Construction des images Docker (backend, frontend, IA)
         stage('Build Docker Images') {
             agent any
             steps {
@@ -63,6 +71,7 @@ sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
             }
         }
 
+        // 6️⃣ Déploiement avec Docker Compose (optionnel)
         stage('Deploy') {
             agent any
             steps {
