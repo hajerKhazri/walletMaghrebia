@@ -1,9 +1,8 @@
 pipeline {
-    agent none
+    agent any
 
     stages {
         stage('Checkout') {
-            agent any
             steps {
                 git branch: 'main',
                     credentialsId: 'github-credentials',
@@ -15,15 +14,15 @@ pipeline {
         // BUILD BACKEND
         // =========================================================
         stage('Build Backend') {
-            agent {
-                docker {
-                    image 'maven:3.9.4-eclipse-temurin-21'
-                    args '-u 0:0'   // exécution en root pour éviter les problèmes de permissions
-                }
-            }
             steps {
-                dir('backend') {
-                    sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
+                script {
+                    sh '''
+                        docker run --rm \
+                          -v ${WORKSPACE}:${WORKSPACE} \
+                          -w ${WORKSPACE}/backend \
+                          maven:3.9.4-eclipse-temurin-21 \
+                          mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository
+                    '''
                 }
             }
         }
@@ -32,15 +31,15 @@ pipeline {
         // TEST BACKEND
         // =========================================================
         stage('Test Backend') {
-            agent {
-                docker {
-                    image 'maven:3.9.4-eclipse-temurin-21'
-                    args '-u 0:0'
-                }
-            }
             steps {
-                dir('backend') {
-                    sh 'mvn test -Dmaven.repo.local=/tmp/.m2/repository'
+                script {
+                    sh '''
+                        docker run --rm \
+                          -v ${WORKSPACE}:${WORKSPACE} \
+                          -w ${WORKSPACE}/backend \
+                          maven:3.9.4-eclipse-temurin-21 \
+                          mvn test -Dmaven.repo.local=/tmp/.m2/repository
+                    '''
                 }
             }
         }
@@ -49,33 +48,32 @@ pipeline {
         // BUILD FRONTEND
         // =========================================================
         stage('Build Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    args '-u 0:0'
-                }
-            }
             steps {
-                dir('frontend') {
-                    sh 'npm install --legacy-peer-deps'
-                    sh 'npm run build -- --configuration production'
+                script {
+                    sh '''
+                        docker run --rm \
+                          -v ${WORKSPACE}:${WORKSPACE} \
+                          -w ${WORKSPACE}/frontend \
+                          node:20-alpine \
+                          sh -c "npm install --legacy-peer-deps && npm run build -- --configuration production"
+                    '''
                 }
             }
         }
 
         // =========================================================
-        // TEST FRONTEND
+        // TEST FRONTEND (optionnel)
         // =========================================================
         stage('Test Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    args '-u 0:0'
-                }
-            }
             steps {
-                dir('frontend') {
-                    sh 'npm test -- --watch=false --browsers=ChromeHeadless || true'
+                script {
+                    sh '''
+                        docker run --rm \
+                          -v ${WORKSPACE}:${WORKSPACE} \
+                          -w ${WORKSPACE}/frontend \
+                          node:20-alpine \
+                          sh -c "npm test -- --watch=false --browsers=ChromeHeadless || true"
+                    '''
                 }
             }
         }
@@ -84,32 +82,32 @@ pipeline {
         // BUILD AI SERVICE
         // =========================================================
         stage('Build AI Service') {
-            agent {
-                docker {
-                    image 'python:3.11-slim'
-                    args '-u 0:0'
-                }
-            }
             steps {
-                dir('ai-service') {
-                    sh 'pip install -r requirements.txt'
+                script {
+                    sh '''
+                        docker run --rm \
+                          -v ${WORKSPACE}:${WORKSPACE} \
+                          -w ${WORKSPACE}/ai-service \
+                          python:3.11-slim \
+                          sh -c "pip install -r requirements.txt"
+                    '''
                 }
             }
         }
 
         // =========================================================
-        // TEST AI SERVICE
+        // TEST AI SERVICE (optionnel)
         // =========================================================
         stage('Test AI Service') {
-            agent {
-                docker {
-                    image 'python:3.11-slim'
-                    args '-u 0:0'
-                }
-            }
             steps {
-                dir('ai-service') {
-                    sh 'pytest || echo "Aucun test Python configuré"'
+                script {
+                    sh '''
+                        docker run --rm \
+                          -v ${WORKSPACE}:${WORKSPACE} \
+                          -w ${WORKSPACE}/ai-service \
+                          python:3.11-slim \
+                          sh -c "pytest || echo 'Aucun test Python configuré'"
+                    '''
                 }
             }
         }
@@ -118,7 +116,6 @@ pipeline {
         // BUILD DOCKER IMAGES
         // =========================================================
         stage('Build Docker Images') {
-            agent any
             steps {
                 script {
                     docker.build("wallet-backend:${BUILD_NUMBER}", './backend')
@@ -132,7 +129,6 @@ pipeline {
         // DEPLOY
         // =========================================================
         stage('Deploy') {
-            agent any
             steps {
                 sh '''
                     docker-compose down -v
