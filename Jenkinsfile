@@ -2,43 +2,40 @@ pipeline {
     agent none
 
     stages {
-        // 1️⃣ Checkout
         stage('Checkout') {
             agent any
             steps {
                 git branch: 'main',
                     credentialsId: 'github-credentials',
                     url: 'https://github.com/hajerKhazri/walletMaghrebia.git'
-                // Vérification rapide
-                sh 'ls -la'
-                sh 'ls -la backend || echo "backend folder not found"'
             }
         }
 
-        // 2️⃣ Build Backend
+        // =========================================================
+        // BUILD BACKEND
+        // =========================================================
         stage('Build Backend') {
             agent {
                 docker {
                     image 'maven:3.9.4-eclipse-temurin-21'
-                    // Montage du workspace et exécution en root
-                    args "-u 0:0 -v ${env.WORKSPACE}:${env.WORKSPACE}"
+                    args '-u 0:0'   // exécution en root pour éviter les problèmes de permissions
                 }
             }
             steps {
                 dir('backend') {
-                    sh 'pwd'
-                    sh 'ls -la'
                     sh 'mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository'
                 }
             }
         }
 
-        // 3️⃣ Test Backend
+        // =========================================================
+        // TEST BACKEND
+        // =========================================================
         stage('Test Backend') {
             agent {
                 docker {
                     image 'maven:3.9.4-eclipse-temurin-21'
-                    args "-u 0:0 -v ${env.WORKSPACE}:${env.WORKSPACE}"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -48,12 +45,14 @@ pipeline {
             }
         }
 
-        // 4️⃣ Build Frontend
+        // =========================================================
+        // BUILD FRONTEND
+        // =========================================================
         stage('Build Frontend') {
             agent {
                 docker {
                     image 'node:20-alpine'
-                    args "-u 0:0 -v ${env.WORKSPACE}:${env.WORKSPACE}"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -64,12 +63,14 @@ pipeline {
             }
         }
 
-        // 5️⃣ Test Frontend (optionnel)
+        // =========================================================
+        // TEST FRONTEND
+        // =========================================================
         stage('Test Frontend') {
             agent {
                 docker {
                     image 'node:20-alpine'
-                    args "-u 0:0 -v ${env.WORKSPACE}:${env.WORKSPACE}"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -79,12 +80,14 @@ pipeline {
             }
         }
 
-        // 6️⃣ Build AI Service
+        // =========================================================
+        // BUILD AI SERVICE
+        // =========================================================
         stage('Build AI Service') {
             agent {
                 docker {
                     image 'python:3.11-slim'
-                    args "-u 0:0 -v ${env.WORKSPACE}:${env.WORKSPACE}"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -94,12 +97,14 @@ pipeline {
             }
         }
 
-        // 7️⃣ Test AI Service (optionnel)
+        // =========================================================
+        // TEST AI SERVICE
+        // =========================================================
         stage('Test AI Service') {
             agent {
                 docker {
                     image 'python:3.11-slim'
-                    args "-u 0:0 -v ${env.WORKSPACE}:${env.WORKSPACE}"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -109,7 +114,9 @@ pipeline {
             }
         }
 
-        // 8️⃣ Build Docker Images
+        // =========================================================
+        // BUILD DOCKER IMAGES
+        // =========================================================
         stage('Build Docker Images') {
             agent any
             steps {
@@ -121,7 +128,9 @@ pipeline {
             }
         }
 
-        // 9️⃣ Deploy
+        // =========================================================
+        // DEPLOY
+        // =========================================================
         stage('Deploy') {
             agent any
             steps {
