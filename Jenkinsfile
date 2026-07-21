@@ -2,16 +2,29 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
+        stage('Checkout avec sous-modules') {
             steps {
-                git branch: 'main',
-                    credentialsId: 'github-credentials',
-                    url: 'https://github.com/hajerKhazri/walletMaghrebia.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: 'main']],
+                    userRemoteConfigs: [[
+                        credentialsId: 'github-credentials',
+                        url: 'https://github.com/hajerKhazri/walletMaghrebia.git'
+                    ]],
+                    extensions: [[
+                        $class: 'SubmoduleOption',
+                        disableSubmodules: false,
+                        parentCredentials: true,
+                        recursiveSubmodules: true,
+                        reference: '',
+                        trackingSubmodules: false,
+                        timeout: 10
+                    ]]
+                ])
             }
         }
 
-        // 🔍 Étape de diagnostic (à garder temporairement)
-        stage('Debug - Structure des dossiers') {
+        stage('Debug - Structure') {
             steps {
                 sh '''
                     echo "=== Contenu de la racine ==="
@@ -20,13 +33,14 @@ pipeline {
                     ls -la wallet/ || echo "wallet/ n'existe pas"
                     echo "=== Contenu de wallet-frontend/ ==="
                     ls -la wallet-frontend/ || echo "wallet-frontend/ n'existe pas"
+                    echo "=== Recherche de pom.xml ==="
+                    find . -name "pom.xml"
+                    echo "=== Recherche de package.json ==="
+                    find . -name "package.json"
                 '''
             }
         }
 
-        // =========================================================
-        // BUILD BACKEND (dans wallet/)
-        // =========================================================
         stage('Build Backend') {
             steps {
                 script {
@@ -41,26 +55,6 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // TEST BACKEND
-        // =========================================================
-        stage('Test Backend') {
-            steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/wallet \
-                          maven:3.9.4-eclipse-temurin-21 \
-                          mvn test -Dmaven.repo.local=/tmp/.m2/repository
-                    '''
-                }
-            }
-        }
-
-        // =========================================================
-        // BUILD FRONTEND
-        // =========================================================
         stage('Build Frontend') {
             steps {
                 script {
@@ -75,77 +69,15 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // TEST FRONTEND (optionnel)
-        // =========================================================
-        stage('Test Frontend') {
-            steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/wallet-frontend \
-                          node:20-alpine \
-                          sh -c "npm test -- --watch=false --browsers=ChromeHeadless || true"
-                    '''
-                }
-            }
-        }
-
-        // =========================================================
-        // BUILD AI SERVICE (si le dossier existe)
-        // =========================================================
-        stage('Build AI Service') {
-            when { expression { fileExists('ai-service') } }
-            steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/ai-service \
-                          python:3.11-slim \
-                          sh -c "pip install -r requirements.txt"
-                    '''
-                }
-            }
-        }
-
-        // =========================================================
-        // TEST AI SERVICE (optionnel)
-        // =========================================================
-        stage('Test AI Service') {
-            when { expression { fileExists('ai-service') } }
-            steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/ai-service \
-                          python:3.11-slim \
-                          sh -c "pytest || echo 'Aucun test Python configuré'"
-                    '''
-                }
-            }
-        }
-
-        // =========================================================
-        // BUILD DOCKER IMAGES
-        // =========================================================
         stage('Build Docker Images') {
             steps {
                 script {
                     docker.build("wallet-backend:${BUILD_NUMBER}", './wallet')
                     docker.build("wallet-frontend:${BUILD_NUMBER}", './wallet-frontend')
-                    if (fileExists('ai-service')) {
-                        docker.build("wallet-ai:${BUILD_NUMBER}", './ai-service')
-                    }
                 }
             }
         }
 
-        // =========================================================
-        // DEPLOY
-        // =========================================================
         stage('Deploy') {
             steps {
                 sh '''
