@@ -10,8 +10,22 @@ pipeline {
             }
         }
 
+        // 🔍 Étape de diagnostic (à garder temporairement)
+        stage('Debug - Structure des dossiers') {
+            steps {
+                sh '''
+                    echo "=== Contenu de la racine ==="
+                    ls -la
+                    echo "=== Contenu de wallet/ ==="
+                    ls -la wallet/ || echo "wallet/ n'existe pas"
+                    echo "=== Contenu de wallet-frontend/ ==="
+                    ls -la wallet-frontend/ || echo "wallet-frontend/ n'existe pas"
+                '''
+            }
+        }
+
         // =========================================================
-        // BUILD BACKEND
+        // BUILD BACKEND (dans wallet/)
         // =========================================================
         stage('Build Backend') {
             steps {
@@ -19,7 +33,7 @@ pipeline {
                     sh '''
                         docker run --rm \
                           -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/backend \
+                          -w ${WORKSPACE}/wallet \
                           maven:3.9.4-eclipse-temurin-21 \
                           mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository
                     '''
@@ -36,7 +50,7 @@ pipeline {
                     sh '''
                         docker run --rm \
                           -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/backend \
+                          -w ${WORKSPACE}/wallet \
                           maven:3.9.4-eclipse-temurin-21 \
                           mvn test -Dmaven.repo.local=/tmp/.m2/repository
                     '''
@@ -53,7 +67,7 @@ pipeline {
                     sh '''
                         docker run --rm \
                           -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/frontend \
+                          -w ${WORKSPACE}/wallet-frontend \
                           node:20-alpine \
                           sh -c "npm install --legacy-peer-deps && npm run build -- --configuration production"
                     '''
@@ -70,7 +84,7 @@ pipeline {
                     sh '''
                         docker run --rm \
                           -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/frontend \
+                          -w ${WORKSPACE}/wallet-frontend \
                           node:20-alpine \
                           sh -c "npm test -- --watch=false --browsers=ChromeHeadless || true"
                     '''
@@ -79,9 +93,10 @@ pipeline {
         }
 
         // =========================================================
-        // BUILD AI SERVICE
+        // BUILD AI SERVICE (si le dossier existe)
         // =========================================================
         stage('Build AI Service') {
+            when { expression { fileExists('ai-service') } }
             steps {
                 script {
                     sh '''
@@ -99,6 +114,7 @@ pipeline {
         // TEST AI SERVICE (optionnel)
         // =========================================================
         stage('Test AI Service') {
+            when { expression { fileExists('ai-service') } }
             steps {
                 script {
                     sh '''
@@ -118,9 +134,11 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    docker.build("wallet-backend:${BUILD_NUMBER}", './backend')
-                    docker.build("wallet-frontend:${BUILD_NUMBER}", './frontend')
-                    docker.build("wallet-ai:${BUILD_NUMBER}", './ai-service')
+                    docker.build("wallet-backend:${BUILD_NUMBER}", './wallet')
+                    docker.build("wallet-frontend:${BUILD_NUMBER}", './wallet-frontend')
+                    if (fileExists('ai-service')) {
+                        docker.build("wallet-ai:${BUILD_NUMBER}", './ai-service')
+                    }
                 }
             }
         }
