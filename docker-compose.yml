@@ -1,0 +1,100 @@
+
+
+services:
+  # ==========================================
+  # 1. BASE DE DONNÉES MySQL
+  # ==========================================
+  mysql:
+    image: mysql:8.0
+    container_name: wallet-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - wallet-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # ==========================================
+  # 2. SERVICE IA (Python)
+  # ==========================================
+  ai-service:
+    build:
+      context: ./wallet/ai-service
+      dockerfile: Dockerfile
+    container_name: wallet-ai
+    restart: always
+    ports:
+      - "5001:5001"
+    networks:
+      - wallet-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # 3. BACKEND SPRING BOOT
+  # ==========================================
+  backend:
+    build:
+      context: ./wallet/wallet
+      dockerfile: Dockerfile
+    container_name: wallet-backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      APP_IA_SERVICE_URL: http://ai-service:5001/analyze
+    ports:
+      - "8081:8081"
+    networks:
+      - wallet-network
+
+  # ==========================================
+  # 4. FRONTEND ANGULAR
+  # ==========================================
+  frontend:
+    build:
+      context: ./wallet-frontend
+      dockerfile: Dockerfile
+    container_name: wallet-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - wallet-network
+
+# ==========================================
+# VOLUMES
+# ==========================================
+volumes:
+  mysql-data:
+
+# ==========================================
+# RÉSEAUX
+# ==========================================
+networks:
+  wallet-network:
+    driver: bridge
