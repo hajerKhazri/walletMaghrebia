@@ -11,14 +11,11 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // BUILD BACKEND
-        // =========================================================
         stage('Build Backend') {
             agent {
                 docker {
                     image 'maven:3.9.4-eclipse-temurin-21'
-                    args "-v /var/run/docker.sock:/var/run/docker.sock -v ${env.WORKSPACE}:${env.WORKSPACE} -u 0:0"
+                    args '-u 0:0'   // exécution en root pour éviter les problèmes de droits
                 }
             }
             steps {
@@ -28,14 +25,11 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // TEST BACKEND
-        // =========================================================
         stage('Test Backend') {
             agent {
                 docker {
                     image 'maven:3.9.4-eclipse-temurin-21'
-                    args "-v /var/run/docker.sock:/var/run/docker.sock -v ${env.WORKSPACE}:${env.WORKSPACE} -u 0:0"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -45,14 +39,11 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // BUILD FRONTEND
-        // =========================================================
         stage('Build Frontend') {
             agent {
                 docker {
                     image 'node:20-alpine'
-                    args "-v ${env.WORKSPACE}:${env.WORKSPACE} -u 0:0"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -63,32 +54,26 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // TEST FRONTEND (optionnel)
-        // =========================================================
         stage('Test Frontend') {
             agent {
                 docker {
                     image 'node:20-alpine'
-                    args "-v ${env.WORKSPACE}:${env.WORKSPACE} -u 0:0"
+                    args '-u 0:0'
                 }
             }
             steps {
                 dir('frontend') {
-                    // Exécute les tests unitaires Angular (si présents)
-                    sh 'npm test -- --watch=false --browsers=ChromeHeadless' || true
+                    // Exécute les tests unitaires Angular (si présents). Le `|| true` évite l'échec du pipeline si aucun test n'est configuré.
+                    sh 'npm test -- --watch=false --browsers=ChromeHeadless || true'
                 }
             }
         }
 
-        // =========================================================
-        // BUILD AI SERVICE
-        // =========================================================
         stage('Build AI Service') {
             agent {
                 docker {
                     image 'python:3.11-slim'
-                    args "-v ${env.WORKSPACE}:${env.WORKSPACE} -u 0:0"
+                    args '-u 0:0'
                 }
             }
             steps {
@@ -98,27 +83,20 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // TEST AI SERVICE (optionnel)
-        // =========================================================
         stage('Test AI Service') {
             agent {
                 docker {
                     image 'python:3.11-slim'
-                    args "-v ${env.WORKSPACE}:${env.WORKSPACE} -u 0:0"
+                    args '-u 0:0'
                 }
             }
             steps {
                 dir('ai-service') {
-                    // Exemple : lancer les tests unitaires avec pytest (si présent)
                     sh 'pytest || echo "Aucun test Python configuré"'
                 }
             }
         }
 
-        // =========================================================
-        // BUILD DOCKER IMAGES
-        // =========================================================
         stage('Build Docker Images') {
             agent any
             steps {
@@ -130,9 +108,6 @@ pipeline {
             }
         }
 
-        // =========================================================
-        // DEPLOY (optionnel)
-        // =========================================================
         stage('Deploy') {
             agent any
             steps {
