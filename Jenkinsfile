@@ -10,12 +10,24 @@ pipeline {
             }
         }
 
-        // ✅ TEST FRONTEND (avec image contenant Chrome headless)
+        // 🔍 Debug : vérifier la structure
+        stage('Debug - Structure') {
+            steps {
+                sh '''
+                    echo "=== Contenu du workspace ==="
+                    ls -la
+                    echo "=== Recherche de package.json ==="
+                    find . -name "package.json"
+                '''
+            }
+        }
+
         stage('Test Frontend') {
             steps {
                 script {
                     sh '''
                         docker run --rm \
+                          -u 0:0 \
                           -v ${WORKSPACE}:${WORKSPACE} \
                           -w ${WORKSPACE} \
                           mcr.microsoft.com/playwright:v1.48.0-focal \
@@ -25,12 +37,12 @@ pipeline {
             }
         }
 
-        // BUILD FRONTEND
         stage('Build Frontend') {
             steps {
                 script {
                     sh '''
                         docker run --rm \
+                          -u 0:0 \
                           -v ${WORKSPACE}:${WORKSPACE} \
                           -w ${WORKSPACE} \
                           node:20-alpine \
@@ -43,7 +55,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("wallet-frontend:${BUILD_NUMBER}")
+                    docker.build("wallet-frontend:${BUILD_NUMBER}", '.')
                 }
             }
         }
