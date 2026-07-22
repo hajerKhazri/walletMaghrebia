@@ -1,0 +1,7 @@
+<app-navbar *ngIf="isAuthenticated && !isAuthPage"></app-navbar>
+
+<div class="main-content" [class.auth-page]="isAuthPage">
+  <router-outlet></router-outlet>
+</div>
+
+<app-footer *ngIf="isAuthenticated && !isAuthPage"></app-footer>

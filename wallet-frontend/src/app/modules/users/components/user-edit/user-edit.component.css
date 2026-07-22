@@ -1,0 +1,13 @@
+.container {
+  max-width: 600px;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}

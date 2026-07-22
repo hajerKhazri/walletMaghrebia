@@ -1,0 +1,168 @@
+<div class="auth-container">
+  <div class="auth-wrapper">
+    <div class="auth-brand">
+      <div class="brand-icon">
+        <i class="fas fa-user-plus"></i>
+      </div>
+      <h1>Wallet <span class="highlight">Maghrebia</span></h1>
+      <p>Créez votre compte</p>
+    </div>
+
+    <div class="auth-card glass-card">
+      <div class="auth-header">
+        <h2>Inscription</h2>
+        <p>Créez un compte pour commencer</p>
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">Prénom</label>
+            <input
+              id="firstName"
+              type="text"
+              class="form-control"
+              formControlName="firstName"
+              placeholder="Votre prénom"
+              [class.is-invalid]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">
+              Le prénom est obligatoire
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Nom</label>
+            <input
+              id="lastName"
+              type="text"
+              class="form-control"
+              formControlName="lastName"
+              placeholder="Votre nom"
+              [class.is-invalid]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched"
+            >
+            <div class="invalid-feedback" *ngIf="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched">
+              Le nom est obligatoire
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="username">Nom d'utilisateur</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user"></i>
+            <input
+              id="username"
+              type="text"
+              class="form-control"
+              formControlName="username"
+              placeholder="Choisissez un nom d'utilisateur"
+              [class.is-invalid]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
+            >
+          </div>
+          <div class="invalid-feedback" *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched">
+            Le nom d'utilisateur doit contenir au moins 3 caractères
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <div class="input-wrapper">
+            <i class="fas fa-envelope"></i>
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              formControlName="email"
+              placeholder="votre@email.com"
+              [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
+            >
+          </div>
+          <div class="invalid-feedback" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+            Veuillez saisir un email valide
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              formControlName="password"
+              placeholder="Minimum 8 caractères"
+              [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
+            >
+            <button type="button" class="password-toggle" (click)="togglePassword()">
+              <i class="fas" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+            <span *ngIf="registerForm.get('password')?.errors?.['required']">Le mot de passe est obligatoire</span>
+            <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Minimum 8 caractères</span>
+            <span *ngIf="registerForm.get('password')?.errors?.['pattern']">Doit contenir majuscule, minuscule, chiffre et caractère spécial</span>
+          </div>
+
+          <div class="password-strength" *ngIf="registerForm.get('password')?.value">
+            <div class="strength-bar">
+              <div class="strength-fill" 
+                   [style.width.%]="(getPasswordStrength(registerForm.get('password')?.value) / 5) * 100"
+                   [style.background]="getPasswordStrengthColor(getPasswordStrength(registerForm.get('password')?.value))">
+              </div>
+            </div>
+            <span class="strength-label" 
+                  [style.color]="getPasswordStrengthColor(getPasswordStrength(registerForm.get('password')?.value))">
+              {{ getPasswordStrengthLabel(getPasswordStrength(registerForm.get('password')?.value)) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirmer le mot de passe</label>
+          <div class="input-wrapper">
+            <i class="fas fa-check-circle"></i>
+            <input
+              id="confirmPassword"
+              [type]="showConfirmPassword ? 'text' : 'password'"
+              class="form-control"
+              formControlName="confirmPassword"
+              placeholder="Confirmez votre mot de passe"
+              [class.is-invalid]="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched"
+            >
+            <button type="button" class="password-toggle" (click)="toggleConfirmPassword()">
+              <i class="fas" [class.fa-eye]="!showConfirmPassword" [class.fa-eye-slash]="showConfirmPassword"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback" *ngIf="registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched">
+            Les mots de passe ne correspondent pas
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:8px;">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="acceptTerms">
+            <span class="checkmark"></span>
+            J'accepte les <a href="#" style="color:var(--primary-color);text-decoration:none;">conditions générales</a>
+          </label>
+          <div class="invalid-feedback" *ngIf="registerForm.get('acceptTerms')?.invalid && registerForm.get('acceptTerms')?.touched">
+            Vous devez accepter les conditions
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg btn-glow" [disabled]="registerForm.invalid || loading" style="width:100%;">
+          <span *ngIf="!loading">Créer mon compte</span>
+          <span *ngIf="loading">
+            <span class="spinner spinner-sm"></span>
+            Création...
+          </span>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Vous avez déjà un compte ? <a routerLink="/auth/login">Se connecter</a></p>
+      </div>
+    </div>
+  </div>
+</div>
