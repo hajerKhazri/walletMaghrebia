@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:20-alpine'
+            args '-u root'   // pour éviter les problèmes de permissions
+            reuseNode true
+        }
+    }
 
     stages {
         stage('Checkout') {
@@ -10,8 +16,8 @@ pipeline {
             }
         }
 
-        // 🔍 Debug : contenu du workspace
-        stage('Debug - Contenu local') {
+        // 🔍 Debug : vérifier la structure
+        stage('Debug - Contenu') {
             steps {
                 sh '''
                     echo "=== Contenu du workspace ==="
@@ -22,47 +28,18 @@ pipeline {
             }
         }
 
-        // 🔍 Debug : vérification du montage Docker
-        stage('Debug - Montage Docker') {
-            steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE} \
-                          alpine ls -la
-                    '''
-                }
-            }
-        }
-
         stage('Test Frontend') {
             steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -u root \
-                          -v "${WORKSPACE}":"${WORKSPACE}" \
-                          -w "${WORKSPACE}" \
-                          mcr.microsoft.com/playwright:v1.48.0-focal \
-                          sh -c "npm install --legacy-peer-deps && npm test -- --watch=false --browsers=ChromeHeadless || true"
-                    '''
-                }
+                sh '''
+                    npm install --legacy-peer-deps
+                    npm test -- --watch=false --browsers=ChromeHeadless || true
+                '''
             }
         }
 
         stage('Build Frontend') {
             steps {
-                script {
-                    sh '''
-                        docker run --rm \
-                          -u root \
-                          -v "${WORKSPACE}":"${WORKSPACE}" \
-                          -w "${WORKSPACE}" \
-                          node:20-alpine \
-                          sh -c "npm install --legacy-peer-deps && npm run build -- --configuration production"
-                    '''
-                }
+                sh 'npm run build -- --configuration production'
             }
         }
 
