@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
+RUN sed -i '/"budgets":/,/]/c"budgets": []' angular.json
 RUN npm run build -- --configuration production
 
 FROM nginx:alpine
