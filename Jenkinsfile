@@ -24,31 +24,13 @@ pipeline {
         stage('Build Backend') {
             steps {
                 script {
-                    sh '''
-                        # Trouver le dossier contenant pom.xml
-                        POM_DIR=$(find . -name "pom.xml" -printf "%h\n" | head -1)
-                        if [ -z "$POM_DIR" ]; then
-                            echo "❌ Aucun fichier pom.xml trouvé !"
-                            exit 1
-                        fi
-                        echo "✅ pom.xml trouvé dans : $POM_DIR"
-
-                        # === Vérification dans le conteneur ===
-                        echo "🔍 Vérification du contenu du répertoire dans le conteneur :"
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/$POM_DIR \
-                          maven:3.9.4-eclipse-temurin-21 \
-                          sh -c "pwd && ls -la && echo 'Recherche pom.xml:' && find . -name pom.xml"
-
-                        # === Exécution de Maven ===
-                        echo "🚀 Lancement de Maven :"
-                        docker run --rm \
-                          -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE}/$POM_DIR \
-                          maven:3.9.4-eclipse-temurin-21 \
-                          mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository
-                    '''
+                    // Utilisation de docker.inside pour monter le workspace automatiquement
+                    docker.image('maven:3.9.4-eclipse-temurin-21').inside {
+                        sh '''
+                            echo "🚀 Exécution de Maven depuis le répertoire : $(pwd)"
+                            mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository
+                        '''
+                    }
                 }
             }
         }
@@ -56,18 +38,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh '''
-                        # Trouver le dossier contenant Dockerfile
-                        DOCKER_DIR=$(find . -name "Dockerfile" -printf "%h\n" | head -1)
-                        if [ -z "$DOCKER_DIR" ]; then
-                            echo "❌ Aucun Dockerfile trouvé !"
-                            exit 1
-                        fi
-                        echo "🐳 Dockerfile trouvé dans : $DOCKER_DIR"
-                        echo "DOCKER_CONTEXT=$DOCKER_DIR" > /tmp/docker_context.txt
-                    '''
-                    def dockerContext = readFile('/tmp/docker_context.txt').trim().split('=')[1]
-                    docker.build("wallet-backend:${BUILD_NUMBER}", "-f ${dockerContext}/Dockerfile ${dockerContext}")
+                    // Le Dockerfile est à la racine, donc le contexte est '.'
+                    docker.build("wallet-backend:${BUILD_NUMBER}", "-f Dockerfile .")
                 }
             }
         }
