@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        // 1️⃣ Checkout (sur l'agent principal)
+        // 1️⃣ Checkout
         stage('Checkout') {
             steps {
                 git branch: 'front',
@@ -11,7 +11,7 @@ pipeline {
             }
         }
 
-        // 2️⃣ Build et tests Angular (dans un conteneur Node)
+        // 2️⃣ Build Angular (dans un conteneur Node)
         stage('Build Frontend') {
             agent {
                 docker {
@@ -21,17 +21,14 @@ pipeline {
                 }
             }
             steps {
-                // Désactiver les budgets
                 sh '''
+                    # Désactiver les budgets dans angular.json
                     if [ -f angular.json ]; then
                         sed -i '/"budgets":/,/]/c\\"budgets": []' angular.json
                     fi
                 '''
-                // Installer les dépendances
                 sh 'npm install --legacy-peer-deps'
-                // Tests (optionnels)
                 sh 'npm test -- --watch=false --browsers=ChromeHeadless || true'
-                // Build avec mémoire augmentée
                 sh '''
                     export NODE_OPTIONS="--max-old-space-size=2048"
                     npm run build -- --configuration production
@@ -39,9 +36,32 @@ pipeline {
             }
         }
 
-        // 3️⃣ Construction de l'image Docker (sur l'agent principal)
+        // 3️⃣ Analyse SonarQube (dans un conteneur Node avec le scanner)
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    docker.image('node:20-alpine').inside('-u root') {
+                        withSonarQubeEnv('SonarQube') {
+                            sh '''
+                                echo "🔍 Installation du scanner SonarQube..."
+                                npm install -g sonarqube-scanner@latest
+
+                                echo "🔍 Lancement de l'analyse SonarQube..."
+                                sonar-scanner \
+                                    -Dsonar.projectKey=wallet-frontend \
+                                    -Dsonar.sources=. \
+                                    -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/** \
+                                    -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
+                                    -Dsonar.host.url=http://host.docker.internal:9000
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4️⃣ Construction de l'image Docker
         stage('Build Docker Image') {
-            agent any
             steps {
                 script {
                     docker.build("wallet-frontend:${BUILD_NUMBER}", '.')
@@ -49,19 +69,7 @@ pipeline {
             }
         }
 
-        // 4️⃣ Push vers Docker Hub (optionnel)
-        stage('Push to Docker Hub') {
-            agent any
-            when { expression { env.DOCKER_REGISTRY != null } }
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-credentials') {
-                        docker.image("wallet-frontend:${BUILD_NUMBER}").push()
-                        docker.image("wallet-frontend:${BUILD_NUMBER}").push('latest')
-                    }
-                }
-            }
-        }
+       
     }
 
     post {
