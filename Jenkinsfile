@@ -44,6 +44,7 @@ pipeline {
                                 mvn sonar:sonar \
                                   -Dsonar.projectKey=wallet-backend \
                                   -Dsonar.host.url=http://host.docker.internal:9000 \
+                                  -Dsonar.userHome=/tmp/sonar-cache \
                                   -Dmaven.repo.local=/tmp/.m2/repository
                             '''
                         }
@@ -73,7 +74,7 @@ pipeline {
             }
         }
 
-        // Étape Push désactivée (pour l'instant)
+        // Étape Push désactivée (à réactiver plus tard)
         // stage('Push to Docker Hub') {
         //     steps {
         //         script {
