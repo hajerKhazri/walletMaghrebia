@@ -35,26 +35,30 @@ pipeline {
         }
 
         // ==========================================
-        // NOUVEAU : Analyse SonarQube
+        // Analyse SonarQube (dans le même conteneur Maven)
         // ==========================================
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // 'SonarQube' est le nom du serveur configuré dans Jenkins
-                    withSonarQubeEnv('SonarQube') {
-                        sh 'mvn sonar:sonar -Dsonar.projectKey=wallet-backend -Dsonar.host.url=http://sonarqube:9000'
+                    docker.image('maven:3.9.4-eclipse-temurin-21').inside {
+                        withSonarQubeEnv('SonarQube') {
+                            sh '''
+                                echo "🔍 Analyse SonarQube en cours..."
+                                mvn sonar:sonar \
+                                  -Dsonar.projectKey=wallet-backend \
+                                  -Dsonar.host.url=http://host.docker.internal:9000 \
+                                  -Dmaven.repo.local=/tmp/.m2/repository
+                            '''
+                        }
                     }
                 }
             }
         }
 
-        // ==========================================
-        // (Optionnel) Attente de la qualité SonarQube
-        // ==========================================
+        // (Optionnel) Attente du Quality Gate
         stage('Quality Gate') {
             steps {
                 script {
-                    // Attend que le Quality Gate soit passé (optionnel)
                     timeout(time: 1, unit: 'HOURS') {
                         def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
@@ -73,20 +77,7 @@ pipeline {
             }
         }
 
-        // Étape Push à réactiver plus tard
-        /*
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-credentials') {
-                        docker.image("wallet-backend:${BUILD_NUMBER}").push()
-                        docker.image("wallet-backend:${BUILD_NUMBER}").push('latest')
-                    }
-                }
-            }
-        }
-        */
-    }
+        
 
     post {
         success {
