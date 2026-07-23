@@ -24,7 +24,6 @@ pipeline {
         stage('Build Backend') {
             steps {
                 script {
-                    // Utilisation de docker.inside pour monter le workspace automatiquement
                     docker.image('maven:3.9.4-eclipse-temurin-21').inside {
                         sh '''
                             echo "🚀 Exécution de Maven depuis le répertoire : $(pwd)"
@@ -38,22 +37,12 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Le Dockerfile est à la racine, donc le contexte est '.'
                     docker.build("wallet-backend:${BUILD_NUMBER}", "-f Dockerfile .")
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'docker-credentials') {
-                        docker.image("wallet-backend:${BUILD_NUMBER}").push()
-                        docker.image("wallet-backend:${BUILD_NUMBER}").push('latest')
-                    }
-                }
-            }
-        }
+       
     }
 
     post {
