@@ -34,9 +34,6 @@ pipeline {
             }
         }
 
-        // ==========================================
-        // Analyse SonarQube (dans le même conteneur Maven)
-        // ==========================================
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -55,7 +52,6 @@ pipeline {
             }
         }
 
-        // (Optionnel) Attente du Quality Gate
         stage('Quality Gate') {
             steps {
                 script {
@@ -77,7 +73,18 @@ pipeline {
             }
         }
 
-        
+        // Étape Push désactivée (pour l'instant)
+        // stage('Push to Docker Hub') {
+        //     steps {
+        //         script {
+        //             docker.withRegistry('https://index.docker.io/v1/', 'docker-credentials') {
+        //                 docker.image("wallet-backend:${BUILD_NUMBER}").push()
+        //                 docker.image("wallet-backend:${BUILD_NUMBER}").push('latest')
+        //             }
+        //         }
+        //     }
+        // }
+    }
 
     post {
         success {
