@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'backend',
+                git branch: 'backendd',
                     credentialsId: 'github-credentials',
                     url: 'https://github.com/hajerKhazri/walletMaghrebia.git'
             }
