@@ -34,6 +34,37 @@ pipeline {
             }
         }
 
+        // ==========================================
+        // NOUVEAU : Analyse SonarQube
+        // ==========================================
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    // 'SonarQube' est le nom du serveur configuré dans Jenkins
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'mvn sonar:sonar -Dsonar.projectKey=wallet-backend -Dsonar.host.url=http://sonarqube:9000'
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // (Optionnel) Attente de la qualité SonarQube
+        // ==========================================
+        stage('Quality Gate') {
+            steps {
+                script {
+                    // Attend que le Quality Gate soit passé (optionnel)
+                    timeout(time: 1, unit: 'HOURS') {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "❌ Quality Gate échoué : ${qg.status}"
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
@@ -42,7 +73,19 @@ pipeline {
             }
         }
 
-       
+        // Étape Push à réactiver plus tard
+        /*
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'docker-credentials') {
+                        docker.image("wallet-backend:${BUILD_NUMBER}").push()
+                        docker.image("wallet-backend:${BUILD_NUMBER}").push('latest')
+                    }
+                }
+            }
+        }
+        */
     }
 
     post {
