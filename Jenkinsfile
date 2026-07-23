@@ -16,7 +16,7 @@ pipeline {
                     sh '''
                         docker run --rm \
                           -v ${WORKSPACE}:${WORKSPACE} \
-                          -w ${WORKSPACE} \
+                          -w ${WORKSPACE}/wallet/wallet \
                           maven:3.9.4-eclipse-temurin-21 \
                           mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository
                     '''
@@ -27,7 +27,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("wallet-backend:${BUILD_NUMBER}")
+                    docker.build("wallet-backend:${BUILD_NUMBER}", "-f wallet/wallet/Dockerfile wallet/wallet")
                 }
             }
         }
