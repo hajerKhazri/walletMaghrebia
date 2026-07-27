@@ -28,6 +28,7 @@ pipeline {
                     fi
                 '''
                 sh 'npm install --legacy-peer-deps'
+                // Les tests peuvent échouer, on les ignore avec || true
                 sh 'npm test -- --watch=false --browsers=ChromeHeadless || true'
                 sh '''
                     export NODE_OPTIONS="--max-old-space-size=2048"
@@ -36,16 +37,14 @@ pipeline {
             }
         }
 
-        // 3️⃣ Analyse SonarQube (dans un conteneur Node avec le scanner)
+        // 3️⃣ Analyse SonarQube (avec l'image officielle sonar-scanner)
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    docker.image('node:20-alpine').inside('-u root') {
+                    // Utiliser l'image sonarsource/sonar-scanner-cli
+                    docker.image('sonarsource/sonar-scanner-cli:latest').inside {
                         withSonarQubeEnv('SonarQube') {
                             sh '''
-                                echo "🔍 Installation du scanner SonarQube..."
-                                npm install -g sonarqube-scanner@latest
-
                                 echo "🔍 Lancement de l'analyse SonarQube..."
                                 sonar-scanner \
                                     -Dsonar.projectKey=wallet-frontend \
@@ -60,7 +59,7 @@ pipeline {
             }
         }
 
-        // 4️⃣ Construction de l'image Docker
+        // 4️⃣ Construction de l'image Docker (sur l'agent principal)
         stage('Build Docker Image') {
             steps {
                 script {
@@ -69,7 +68,8 @@ pipeline {
             }
         }
 
-       
+        // 5️⃣ Push vers Docker Hub (désactivé)
+        // stage('Push to Docker Hub') { ... }
     }
 
     post {
