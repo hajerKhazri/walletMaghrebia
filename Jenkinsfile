@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven'
+        jdk 'JDK17'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -10,79 +15,34 @@ pipeline {
             }
         }
 
-        stage('Inspect Workspace') {
+        stage('Build') {
             steps {
-                sh '''
-                    echo "📂 Contenu du workspace :"
-                    ls -la
-                    echo "🔍 Recherche de pom.xml :"
-                    find . -name "pom.xml"
-                '''
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Build Backend') {
+        stage('SonarQube') {
             steps {
-                script {
-                    docker.image('maven:3.9.4-eclipse-temurin-21').inside {
-                        sh '''
-                            echo "🚀 Exécution de Maven depuis le répertoire : $(pwd)"
-                            mvn clean package -DskipTests -Dmaven.repo.local=/tmp/.m2/repository
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('SonarQube Analysis') {
-            steps {
-                script {
-                    docker.image('maven:3.9.4-eclipse-temurin-21').inside {
-                        withSonarQubeEnv('SonarQube') {
-                            sh '''
-                                echo "🔍 Analyse SonarQube en cours..."
-                                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
-                                  -Dsonar.projectKey=wallet-backend \
-                                  -Dsonar.host.url=http://host.docker.internal:9000 \
-                                  -Dsonar.userHome=/tmp/sonar-cache \
-                                  -Dmaven.repo.local=/tmp/.m2/repository
-                            '''
-                        }
-                    }
+                withSonarQubeEnv('SonarQube') {
+                    sh 'mvn sonar:sonar -Dsonar.projectKey=wallet-backend -Dsonar.host.url=http://host.docker.internal:9000'
                 }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                script {
-                    timeout(time: 1, unit: 'HOURS') {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "❌ Quality Gate échoué : ${qg.status}"
-                        }
+                timeout(time: 1, unit: 'HOURS') {
+                    def qg = waitForQualityGate()
+                    if (qg.status != 'OK') {
+                        error "❌ Quality Gate échoué"
                     }
                 }
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    docker.build("wallet-backend:${BUILD_NUMBER}", "-f Dockerfile .")
-                }
-            }
-        }
-
-      
     }
 
     post {
-        success {
-            echo "✅ Backend build ${BUILD_NUMBER} réussi !"
-        }
-        failure {
-            error "❌ Backend build ${BUILD_NUMBER} échoué."
-        }
+        success { echo "✅ Build backend réussi" }
+        failure { error "❌ Build backend échoué" }
     }
 }
