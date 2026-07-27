@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     stages {
-        // 1️⃣ Checkout
         stage('Checkout') {
             steps {
                 git branch: 'front',
@@ -11,7 +10,6 @@ pipeline {
             }
         }
 
-        // 2️⃣ Build Angular (dans un conteneur Node)
         stage('Build Frontend') {
             agent {
                 docker {
@@ -22,13 +20,11 @@ pipeline {
             }
             steps {
                 sh '''
-                    # Désactiver les budgets dans angular.json
                     if [ -f angular.json ]; then
                         sed -i '/"budgets":/,/]/c\\"budgets": []' angular.json
                     fi
                 '''
                 sh 'npm install --legacy-peer-deps'
-                // Les tests peuvent échouer, on les ignore avec || true
                 sh 'npm test -- --watch=false --browsers=ChromeHeadless || true'
                 sh '''
                     export NODE_OPTIONS="--max-old-space-size=2048"
@@ -37,15 +33,13 @@ pipeline {
             }
         }
 
-        // 3️⃣ Analyse SonarQube (avec l'image officielle sonar-scanner)
         stage('SonarQube Analysis') {
             steps {
                 script {
-                    // Utiliser l'image sonarsource/sonar-scanner-cli
                     docker.image('sonarsource/sonar-scanner-cli:latest').inside {
                         withSonarQubeEnv('SonarQube') {
                             sh '''
-                                echo "🔍 Lancement de l'analyse SonarQube..."
+                                echo "🔍 Analyse SonarQube..."
                                 sonar-scanner \
                                     -Dsonar.projectKey=wallet-frontend \
                                     -Dsonar.sources=. \
@@ -58,23 +52,11 @@ pipeline {
                 }
             }
         }
-
-        // 4️⃣ Construction de l'image Docker (sur l'agent principal)
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    docker.build("wallet-frontend:${BUILD_NUMBER}", '.')
-                }
-            }
-        }
-
-        // 5️⃣ Push vers Docker Hub (désactivé)
-        // stage('Push to Docker Hub') { ... }
     }
 
     post {
         success {
-            echo "✅ Frontend build ${BUILD_NUMBER} réussi !"
+            echo "✅ Frontend build ${BUILD_NUMBER} réussi ! (images Docker existantes utilisées)"
         }
         failure {
             error "❌ Frontend build ${BUILD_NUMBER} échoué."
