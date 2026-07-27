@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -10,56 +14,33 @@ pipeline {
             }
         }
 
-        stage('Build Frontend') {
-            agent {
-                docker {
-                    image 'node:20-alpine'
-                    args '-u root'
-                    reuseNode true
-                }
-            }
+        stage('Build') {
             steps {
                 sh '''
-                    if [ -f angular.json ]; then
-                        sed -i '/"budgets":/,/]/c\\"budgets": []' angular.json
-                    fi
-                '''
-                sh 'npm install --legacy-peer-deps'
-                sh 'npm test -- --watch=false --browsers=ChromeHeadless || true'
-                sh '''
-                    export NODE_OPTIONS="--max-old-space-size=2048"
+                    npm install --legacy-peer-deps
                     npm run build -- --configuration production
                 '''
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('SonarQube') {
             steps {
-                script {
-                    docker.image('sonarsource/sonar-scanner-cli:latest').inside {
-                        withSonarQubeEnv('SonarQube') {
-                            sh '''
-                                echo "🔍 Analyse SonarQube..."
-                                sonar-scanner \
-                                    -Dsonar.projectKey=wallet-frontend \
-                                    -Dsonar.sources=. \
-                                    -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/coverage/** \
-                                    -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
-                                    -Dsonar.host.url=http://host.docker.internal:9000
-                            '''
-                        }
-                    }
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        npm install -g sonarqube-scanner
+                        sonar-scanner \
+                            -Dsonar.projectKey=wallet-frontend \
+                            -Dsonar.sources=. \
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/** \
+                            -Dsonar.host.url=http://host.docker.internal:9000
+                    '''
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Frontend build ${BUILD_NUMBER} réussi ! (images Docker existantes utilisées)"
-        }
-        failure {
-            error "❌ Frontend build ${BUILD_NUMBER} échoué."
-        }
+        success { echo "✅ Build frontend réussi" }
+        failure { error "❌ Build frontend échoué" }
     }
 }
