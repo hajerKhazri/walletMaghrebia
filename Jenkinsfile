@@ -41,7 +41,7 @@ pipeline {
                         withSonarQubeEnv('SonarQube') {
                             sh '''
                                 echo "🔍 Analyse SonarQube en cours..."
-                                mvn sonar:sonar \
+                                mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
                                   -Dsonar.projectKey=wallet-backend \
                                   -Dsonar.host.url=http://host.docker.internal:9000 \
                                   -Dsonar.userHome=/tmp/sonar-cache \
@@ -74,17 +74,7 @@ pipeline {
             }
         }
 
-        // Étape Push désactivée (à réactiver plus tard)
-        // stage('Push to Docker Hub') {
-        //     steps {
-        //         script {
-        //             docker.withRegistry('https://index.docker.io/v1/', 'docker-credentials') {
-        //                 docker.image("wallet-backend:${BUILD_NUMBER}").push()
-        //                 docker.image("wallet-backend:${BUILD_NUMBER}").push('latest')
-        //             }
-        //         }
-        //     }
-        // }
+      
     }
 
     post {
