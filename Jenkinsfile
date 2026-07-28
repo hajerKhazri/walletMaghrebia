@@ -12,14 +12,14 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh '/usr/bin/mvn clean package -DskipTests'
             }
         }
 
         stage('SonarQube') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=wallet-backend -Dsonar.host.url=http://host.docker.internal:9000'
+                    sh '/usr/bin/mvn sonar:sonar -Dsonar.projectKey=wallet-backend -Dsonar.host.url=http://host.docker.internal:9000'
                 }
             }
         }
