@@ -13,8 +13,8 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    npm install --legacy-peer-deps
-                    npm run build -- --configuration production
+                    /usr/bin/npm install --legacy-peer-deps
+                    /usr/bin/npm run build -- --configuration production
                 '''
             }
         }
@@ -23,8 +23,8 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        npm install -g sonarqube-scanner
-                        sonar-scanner \
+                        /usr/bin/npm install -g sonarqube-scanner
+                        /usr/bin/sonar-scanner \
                             -Dsonar.projectKey=wallet-frontend \
                             -Dsonar.sources=. \
                             -Dsonar.exclusions=**/node_modules/**,**/dist/** \
