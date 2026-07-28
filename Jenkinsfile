@@ -19,7 +19,13 @@ pipeline {
         stage('SonarQube') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '/usr/bin/mvn sonar:sonar -Dsonar.projectKey=wallet-backend -Dsonar.host.url=http://host.docker.internal:9000'
+                    sh '''
+                        /usr/bin/mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+                          -Dsonar.projectKey=wallet-backend \
+                          -Dsonar.host.url=http://host.docker.internal:9000 \
+                          -Dsonar.userHome=/tmp/sonar-cache \
+                          -Dmaven.repo.local=/tmp/.m2/repository
+                    '''
                 }
             }
         }
