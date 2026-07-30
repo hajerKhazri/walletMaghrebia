@@ -28,7 +28,8 @@ pipeline {
                             -Dsonar.projectKey=wallet-frontend \
                             -Dsonar.sources=. \
                             -Dsonar.exclusions=**/node_modules/**,**/dist/** \
-                            -Dsonar.host.url=http://host.docker.internal:9000
+                            -Dsonar.host.url=http://host.docker.internal:9000 \
+                            -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
             }
