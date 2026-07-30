@@ -25,15 +25,13 @@ pipeline {
 
         stage('SonarQube') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token-3', variable: 'SONAR_TOKEN')]) {
+                withSonarQubeEnv('SonarQube') {
                     sh '''
                         /usr/bin/npm install -g sonarqube-scanner
                         npx sonar-scanner \
                             -Dsonar.projectKey=wallet-frontend \
                             -Dsonar.sources=. \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/** \
-                            -Dsonar.host.url=http://host.docker.internal:9000 \
-                            -Dsonar.login=${SONAR_TOKEN}
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/**
                     '''
                 }
             }
