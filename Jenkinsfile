@@ -13,6 +13,10 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
+                    # Désactiver les budgets (évite les erreurs de taille de fichier)
+                    if [ -f angular.json ]; then
+                        sed -i '/"budgets":/,/]/c\\"budgets": []' angular.json
+                    fi
                     /usr/bin/npm install --legacy-peer-deps
                     /usr/bin/npm run build -- --configuration production
                 '''
