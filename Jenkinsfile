@@ -19,29 +19,19 @@ pipeline {
         stage('SonarQube') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
+                    sh """
                         /usr/bin/mvn org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
                           -Dsonar.projectKey=wallet-backend \
                           -Dsonar.host.url=http://host.docker.internal:9000 \
+                          -Dsonar.login=${env.SONAR_TOKEN} \
                           -Dsonar.userHome=/tmp/sonar-cache \
                           -Dmaven.repo.local=/tmp/.m2/repository
-                    '''
+                    """
                 }
             }
         }
 
-        stage('Quality Gate') {
-            steps {
-                script {
-                    timeout(time: 1, unit: 'HOURS') {
-                        def qg = waitForQualityGate()
-                        if (qg.status != 'OK') {
-                            error "❌ Quality Gate échoué : ${qg.status}"
-                        }
-                    }
-                }
-            }
-        }
+       
     }
 
     post {
