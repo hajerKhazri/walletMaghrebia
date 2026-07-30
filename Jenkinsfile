@@ -13,7 +13,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    # Désactiver les budgets (évite les erreurs de taille de fichier)
+                    # Désactiver les budgets
                     if [ -f angular.json ]; then
                         sed -i '/"budgets":/,/]/c\\"budgets": []' angular.json
                     fi
@@ -26,15 +26,18 @@ pipeline {
         stage('SonarQube') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    sh """
-                        /usr/bin/npm install -g sonarqube-scanner
-                        /usr/bin/sonar-scanner \
-                            -Dsonar.projectKey=wallet-frontend \
-                            -Dsonar.sources=. \
-                            -Dsonar.exclusions=**/node_modules/**,**/dist/** \
-                            -Dsonar.host.url=http://host.docker.internal:9000 \
-                            -Dsonar.login=${SONAR_TOKEN}
-                    """
+                    script {
+                        docker.image('sonarsource/sonar-scanner-cli:latest').inside {
+                            sh """
+                                sonar-scanner \
+                                    -Dsonar.projectKey=wallet-frontend \
+                                    -Dsonar.sources=. \
+                                    -Dsonar.exclusions=**/node_modules/**,**/dist/** \
+                                    -Dsonar.host.url=http://host.docker.internal:9000 \
+                                    -Dsonar.login=${SONAR_TOKEN}
+                            """
+                        }
+                    }
                 }
             }
         }
