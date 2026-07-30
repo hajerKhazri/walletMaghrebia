@@ -25,7 +25,7 @@ pipeline {
 
         stage('SonarQube') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'sonar-token-3', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         /usr/bin/npm install -g sonarqube-scanner
                         npx sonar-scanner \
