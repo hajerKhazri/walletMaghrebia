@@ -26,18 +26,15 @@ pipeline {
         stage('SonarQube') {
             steps {
                 withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    script {
-                        docker.image('sonarsource/sonar-scanner-cli:latest').inside {
-                            sh """
-                                sonar-scanner \
-                                    -Dsonar.projectKey=wallet-frontend \
-                                    -Dsonar.sources=. \
-                                    -Dsonar.exclusions=**/node_modules/**,**/dist/** \
-                                    -Dsonar.host.url=http://host.docker.internal:9000 \
-                                    -Dsonar.login=${SONAR_TOKEN}
-                            """
-                        }
-                    }
+                    sh '''
+                        /usr/bin/npm install -g sonarqube-scanner
+                        npx sonar-scanner \
+                            -Dsonar.projectKey=wallet-frontend \
+                            -Dsonar.sources=. \
+                            -Dsonar.exclusions=**/node_modules/**,**/dist/** \
+                            -Dsonar.host.url=http://host.docker.internal:9000 \
+                            -Dsonar.login=${SONAR_TOKEN}
+                    '''
                 }
             }
         }
